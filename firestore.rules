@@ -1,0 +1,75 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function userRole(role) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+
+    function ownsClassroom(classroomId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/classrooms/$(classroomId))
+        && get(/databases/$(database)/documents/classrooms/$(classroomId)).data.teacherId == request.auth.uid;
+    }
+
+    match /users/{userId} {
+      allow create: if isOwner(userId);
+      allow read, update: if isOwner(userId);
+      allow delete: if false;
+    }
+
+    match /teachers/{teacherId} {
+      allow create, read, update: if isOwner(teacherId);
+      allow delete: if false;
+    }
+
+    match /students/{studentId} {
+      allow create, read, update: if isOwner(studentId);
+      allow delete: if false;
+    }
+
+    match /classrooms/{classroomId} {
+      allow create: if userRole('teacher') && request.resource.data.teacherId == request.auth.uid;
+      allow read, update: if signedIn()
+        && (resource.data.teacherId == request.auth.uid || request.auth.uid in resource.data.studentIds);
+      allow delete: if signedIn() && resource.data.teacherId == request.auth.uid;
+    }
+
+    match /modules/{moduleId} {
+      allow create: if userRole('teacher') && ownsClassroom(request.resource.data.classroomId);
+      allow read, update, delete: if ownsClassroom(resource.data.classroomId);
+    }
+
+    match /assignments/{assignmentId} {
+      allow create: if userRole('teacher') && ownsClassroom(request.resource.data.classroomId);
+      allow read, update, delete: if ownsClassroom(resource.data.classroomId);
+    }
+
+    match /quizzes/{quizId} {
+      allow create: if userRole('teacher') && ownsClassroom(request.resource.data.classroomId);
+      allow read, update, delete: if ownsClassroom(resource.data.classroomId);
+    }
+
+    match /submissions/{submissionId} {
+      allow create: if signedIn() && request.resource.data.studentId == request.auth.uid;
+      allow read, update: if signedIn()
+        && (resource.data.studentId == request.auth.uid || ownsClassroom(resource.data.classroomId));
+      allow delete: if false;
+    }
+
+    match /analytics/{classroomId} {
+      allow read: if ownsClassroom(classroomId);
+      allow write: if false;
+    }
+  }
+}
