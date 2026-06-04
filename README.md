@@ -1,4 +1,87 @@
-# React + Vite
+# Factorial N Academy
+
+React + Vite prototype for the Factorial N Academy student and teacher onboarding flows.
+
+The app currently includes:
+
+- Student signup, login, onboarding, and goal selection
+- Teacher signup, login, onboarding, classroom dashboard, modules, assignments, analytics
+- Firebase Auth, Firestore, and Storage integration with mock fallbacks
+- Firebase emulator seed data
+- Docker Compose local development setup
+
+## Quick Start
+
+```bash
+npm install
+cp .env.example .env
+npm run dev
+```
+
+Open:
+
+```txt
+http://localhost:5173
+```
+
+## Firebase Emulator Workflow
+
+Start emulators:
+
+```bash
+npm run emulators
+```
+
+Seed demo data in a second terminal:
+
+```bash
+npm run seed:emulators
+```
+
+Start the app in a third terminal:
+
+```bash
+npm run dev
+```
+
+Demo accounts:
+
+```txt
+Teacher: teacher@factorialn.test / password123
+Student: student1@factorialn.test / password123
+```
+
+## Docker Workflow
+
+With Docker Desktop running:
+
+```bash
+npm run docker:dev
+```
+
+Then seed demo data:
+
+```bash
+npm run docker:seed
+```
+
+Open:
+
+- App: http://localhost:5173
+- Firebase Emulator UI: http://localhost:4000
+
+## Backend Docs
+
+See [docs/backend-readme.md](docs/backend-readme.md) for the Firebase architecture, Docker setup, database collections, rules model, and local development workflow.
+
+## Development Checks
+
+```bash
+npm run lint
+npm run build
+```
+
+## Original Vite Notes
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
