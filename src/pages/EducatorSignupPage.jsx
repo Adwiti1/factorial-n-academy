@@ -1,24 +1,29 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AppShell from '../components/AppShell.jsx'
 import FormField from '../components/FormField.jsx'
 import PrimaryButton from '../components/PrimaryButton.jsx'
-import { saveEducatorAccount } from '../services/mockTeacher.js'
+import { signupEducator } from '../services/educatorSignup.js'
 
 function EducatorSignupPage() {
   const navigate = useNavigate()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
 
-    saveEducatorAccount({
+    setIsSubmitting(true)
+
+    await signupEducator({
       displayName: formData.get('displayName'),
       email: formData.get('email'),
-      passwordLength: formData.get('password').length,
-      school: formData.get('school'),
-      region: formData.get('region'),
+      password: formData.get('password'),
+      schoolName: formData.get('school'),
+      countryRegion: formData.get('region'),
     })
 
+    setIsSubmitting(false)
     navigate('/intro')
   }
 
@@ -46,7 +51,9 @@ function EducatorSignupPage() {
                 <option>Other</option>
               </select>
             </label>
-            <PrimaryButton type="submit">Create Educator Account</PrimaryButton>
+            <PrimaryButton type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Creating...' : 'Create Educator Account'}
+            </PrimaryButton>
           </form>
           <p className="microcopy">
             Already have an account? <Link to="/login">Login</Link>

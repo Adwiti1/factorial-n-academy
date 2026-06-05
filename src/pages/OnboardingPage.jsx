@@ -1,22 +1,26 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AppShell from '../components/AppShell.jsx'
 import PrimaryButton from '../components/PrimaryButton.jsx'
 import SelectField from '../components/SelectField.jsx'
-import { saveOnboardingState } from '../services/mockOnboarding.js'
+import { saveStudentOnboarding } from '../services/studentOnboarding.js'
 
 function OnboardingPage() {
   const navigate = useNavigate()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
 
-    saveOnboardingState({
+    setIsSubmitting(true)
+    await saveStudentOnboarding({
       age: formData.get('age'),
       grade: formData.get('grade'),
       experience: formData.get('experience'),
     })
 
+    setIsSubmitting(false)
     navigate('/goals')
   }
 
@@ -58,7 +62,9 @@ function OnboardingPage() {
             <option value="advanced">Advanced problem solver</option>
           </SelectField>
 
-          <PrimaryButton type="submit">Continue</PrimaryButton>
+          <PrimaryButton type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : 'Continue'}
+          </PrimaryButton>
         </form>
       </section>
     </AppShell>

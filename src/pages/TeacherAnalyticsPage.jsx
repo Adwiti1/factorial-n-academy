@@ -1,28 +1,13 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout.jsx'
-import { getTeacherState } from '../services/mockTeacher.js'
-
-const moduleCompletion = [
-  ['Module 1', 'Robotics Foundations', 88],
-  ['Module 2', 'Mission Map Challenge', 64],
-  ['Module 3', 'Final Build Project', 42],
-]
-
-const assignmentGrades = [
-  ['Rescue Robot Brief', '84%'],
-  ['Loops Mini Quiz Prep', '78%'],
-  ['Mission Map Plan', '91%'],
-]
-
-const quizGrades = [
-  ['Robotics Safety Quiz', '86%'],
-  ['Python Loops Quiz', '72%'],
-  ['Sensors Checkpoint', '88%'],
-]
+import { getSelectedClassroomId } from '../services/selectedClassroom.js'
+import { getTeacherAnalytics } from '../services/teacherAnalytics.js'
 
 function TeacherAnalyticsPage() {
-  const { analytics, classrooms } = getTeacherState()
-  const classroom = classrooms[0]
+  const [analytics, setAnalytics] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const classroomId = getSelectedClassroomId()
   const classNavItems = [
     ['Dashboard', '/dashboard', 'All classes'],
     ['Build', '/modules', 'Class lessons'],
@@ -30,10 +15,29 @@ function TeacherAnalyticsPage() {
     ['Analytics', '/analytics', 'Class progress'],
   ]
 
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadAnalytics() {
+      const result = await getTeacherAnalytics(classroomId)
+
+      if (isMounted) {
+        setAnalytics(result.analytics)
+        setIsLoading(false)
+      }
+    }
+
+    loadAnalytics()
+
+    return () => {
+      isMounted = false
+    }
+  }, [classroomId])
+
   return (
     <DashboardLayout navItems={classNavItems} showAssistant={false}>
       <section className="dashboard-content">
-        <Link className="back-link" to="/classroom/robotics-8a">
+        <Link className="back-link" to={`/classroom/${classroomId}`}>
           Back to classroom
         </Link>
 
@@ -44,44 +48,47 @@ function TeacherAnalyticsPage() {
           </div>
         </div>
 
+        {isLoading && <p className="microcopy">Loading analytics...</p>}
+        {!isLoading && analytics && (
+          <>
         <section className="analytics-summary-grid">
           <article>
             <span>Students</span>
-            <strong>{classroom.students}</strong>
+            <strong>{analytics.summary.students}</strong>
           </article>
           <article>
             <span>Completion</span>
-            <strong>{analytics.completionRate}%</strong>
+            <strong>{analytics.summary.completionRate}%</strong>
           </article>
           <article>
             <span>Quiz Average</span>
-            <strong>{analytics.quizAverage}%</strong>
+            <strong>{analytics.summary.quizAverage}%</strong>
           </article>
         </section>
 
         <div className="classroom-content-grid">
           <section className="classroom-list-panel">
             <h2>Assignment grades</h2>
-            {assignmentGrades.map(([name, grade]) => (
+            {analytics.assignmentGrades.map(({ name, grade }) => (
               <article key={name}>
                 <div>
                   <h3>{name}</h3>
                   <p>Class average</p>
                 </div>
-                <span>{grade}</span>
+                <span>{grade}%</span>
               </article>
             ))}
           </section>
 
           <section className="classroom-list-panel">
             <h2>Quiz grades</h2>
-            {quizGrades.map(([name, grade]) => (
+            {analytics.quizGrades.map(({ name, grade }) => (
               <article key={name}>
                 <div>
                   <h3>{name}</h3>
                   <p>Class average</p>
                 </div>
-                <span>{grade}</span>
+                <span>{grade}%</span>
               </article>
             ))}
           </section>
@@ -89,7 +96,7 @@ function TeacherAnalyticsPage() {
 
         <section className="classroom-list-panel">
           <h2>Module completion</h2>
-          {moduleCompletion.map(([module, title, completion]) => (
+          {analytics.moduleCompletion.map(({ module, title, completion }) => (
             <article key={module}>
               <div>
                 <h3>{module}</h3>
@@ -99,6 +106,8 @@ function TeacherAnalyticsPage() {
             </article>
           ))}
         </section>
+          </>
+        )}
       </section>
     </DashboardLayout>
   )

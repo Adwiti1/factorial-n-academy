@@ -4,9 +4,9 @@ import AppShell from '../components/AppShell.jsx'
 import AuthCard from '../components/AuthCard.jsx'
 import FormField from '../components/FormField.jsx'
 import PrimaryButton from '../components/PrimaryButton.jsx'
-import { loginEducator } from '../services/educatorLogin.js'
+import { loginStudent } from '../services/studentAuth.js'
 
-function LoginPage() {
+function StudentLoginPage() {
   const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -15,41 +15,37 @@ function LoginPage() {
     const formData = new FormData(event.currentTarget)
 
     setIsSubmitting(true)
-
-    await loginEducator({
+    await loginStudent({
       email: formData.get('email'),
       password: formData.get('password'),
     })
 
     setIsSubmitting(false)
-    navigate('/dashboard')
+    navigate('/student/intro')
   }
 
   return (
-    <AppShell showBrand showLanguageBar={false}>
+    <AppShell>
       <AuthCard>
         <div className="academy-badge" aria-hidden="true">
           <span>FN</span>
         </div>
         <div className="card-heading">
-          <h1>Login</h1>
+          <h1>Student Login</h1>
         </div>
         <form className="auth-form" onSubmit={handleSubmit}>
-          <FormField id="email" label="Email" name="email" required type="email" />
-          <FormField id="password" label="Password" name="password" required type="password" />
-          <Link className="forgot-link" to="/signup">
-            Forgot Password?
-          </Link>
+          <FormField id="student-email" label="Email" name="email" required type="email" />
+          <FormField id="student-password" label="Password" name="password" required type="password" />
           <PrimaryButton type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Logging in...' : 'Log In'}
           </PrimaryButton>
         </form>
         <p className="microcopy">
-          Don&apos;t have an account? <Link to="/signup">Create Account</Link>
+          Don&apos;t have an account? <Link to="/student/signup">Create Account</Link>
         </p>
       </AuthCard>
     </AppShell>
   )
 }
 
-export default LoginPage
+export default StudentLoginPage

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import AppShell from '../components/AppShell.jsx'
 import PrimaryButton from '../components/PrimaryButton.jsx'
-import { saveOnboardingState } from '../services/mockOnboarding.js'
+import { saveStudentGoals } from '../services/studentOnboarding.js'
 
 const goals = [
   {
@@ -24,9 +24,12 @@ const goals = [
 
 function GoalSelectionPage() {
   const [selectedGoal, setSelectedGoal] = useState('10')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  function handleContinue() {
-    saveOnboardingState({ weeklyGoalMinutes: selectedGoal })
+  async function handleContinue() {
+    setIsSubmitting(true)
+    await saveStudentGoals({ weeklyGoalMinutes: selectedGoal })
+    setIsSubmitting(false)
   }
 
   return (
@@ -53,8 +56,8 @@ function GoalSelectionPage() {
           ))}
         </div>
 
-        <PrimaryButton onClick={handleContinue} type="button">
-          Continue
+        <PrimaryButton disabled={isSubmitting} onClick={handleContinue} type="button">
+          {isSubmitting ? 'Saving...' : 'Continue'}
         </PrimaryButton>
       </section>
     </AppShell>

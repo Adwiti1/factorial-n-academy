@@ -16,7 +16,7 @@ function WelcomePage() {
         </div>
         <div className="button-stack">
           <PrimaryButton to="/student/signup">I&apos;m New</PrimaryButton>
-          <Link className="secondary-link" to="/login">
+          <Link className="secondary-link" to="/student/login">
             Login
           </Link>
         </div>

@@ -1,10 +1,14 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout.jsx'
 import PrimaryButton from '../components/PrimaryButton.jsx'
-import { getTeacherState } from '../services/mockTeacher.js'
+import { getSelectedClassroomId } from '../services/selectedClassroom.js'
+import { getTeacherModules } from '../services/teacherModules.js'
 
 function ModuleBuilderPage() {
-  const { modules } = getTeacherState()
+  const [modules, setModules] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const classroomId = getSelectedClassroomId()
   const classNavItems = [
     ['Dashboard', '/dashboard', 'All classes'],
     ['Build', '/modules', 'Class lessons'],
@@ -12,10 +16,29 @@ function ModuleBuilderPage() {
     ['Analytics', '/analytics', 'Class progress'],
   ]
 
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadModules() {
+      const result = await getTeacherModules(classroomId)
+
+      if (isMounted) {
+        setModules(result.modules)
+        setIsLoading(false)
+      }
+    }
+
+    loadModules()
+
+    return () => {
+      isMounted = false
+    }
+  }, [classroomId])
+
   return (
     <DashboardLayout navItems={classNavItems} showAssistant={false}>
       <section className="dashboard-content">
-        <Link className="back-link" to="/classroom/robotics-8a">
+        <Link className="back-link" to={`/classroom/${classroomId}`}>
           Back to classroom
         </Link>
 
@@ -28,7 +51,11 @@ function ModuleBuilderPage() {
 
         <section className="classroom-list-panel previous-modules-panel">
           <h2>Previous modules</h2>
-          {modules.map((module) => (
+          {isLoading && <p className="microcopy">Loading modules...</p>}
+          {!isLoading && modules.length === 0 && (
+            <p className="microcopy">No modules saved yet.</p>
+          )}
+          {!isLoading && modules.map((module) => (
             <Link className="module-edit-link" key={module.id} to={`/modules/${module.id}`}>
               <div>
                 <h3>{module.title}</h3>

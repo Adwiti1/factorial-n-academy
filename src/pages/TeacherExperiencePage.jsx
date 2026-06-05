@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import AppShell from '../components/AppShell.jsx'
 import PrimaryButton from '../components/PrimaryButton.jsx'
 import ProgressSteps from '../components/ProgressSteps.jsx'
-import { saveTeacherExperience } from '../services/mockTeacher.js'
+import { saveTeacherExperience } from '../services/teacherExperience.js'
 
 const levels = [
   ['Beginner', 'New to STEM teaching', 'Guided classroom setup'],
@@ -13,15 +13,20 @@ const levels = [
 
 function TeacherExperiencePage() {
   const [level, setLevel] = useState('Intermediate')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
 
-  function handleContinue(event) {
+  async function handleContinue(event) {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
-    saveTeacherExperience({
+
+    setIsSubmitting(true)
+    await saveTeacherExperience({
       level,
       certification: formData.get('certification'),
     })
+
+    setIsSubmitting(false)
     navigate('/teacher-tutorial')
   }
 
@@ -62,7 +67,9 @@ function TeacherExperiencePage() {
                 <option>Other</option>
               </select>
             </label>
-            <PrimaryButton type="submit">Continue</PrimaryButton>
+            <PrimaryButton type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Continue'}
+            </PrimaryButton>
           </form>
         </section>
       </section>
