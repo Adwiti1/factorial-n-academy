@@ -1,22 +1,55 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout.jsx'
 import PrimaryButton from '../components/PrimaryButton.jsx'
-import { createClassroom, getTeacherState } from '../services/mockTeacher.js'
+import { createTeacherClassroom, getTeacherClassroomState } from '../services/teacherClassrooms.js'
 
 function EducatorDashboardPage() {
-  const [state, setState] = useState(() => getTeacherState())
+  const [state, setState] = useState({ classrooms: [] })
+  const [isLoading, setIsLoading] = useState(true)
+  const [isCreating, setIsCreating] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
 
-  function handleCreateClassroom(event) {
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadClassrooms() {
+      const result = await getTeacherClassroomState()
+
+      if (isMounted) {
+        setState(result.state)
+        setIsLoading(false)
+      }
+    }
+
+    loadClassrooms()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  async function handleCreateClassroom(event) {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
-    const nextState = createClassroom({
+
+    setIsCreating(true)
+    const result = await createTeacherClassroom({
       name: formData.get('name'),
       grade: formData.get('grade'),
       subject: formData.get('subject'),
     })
-    setState(nextState)
+
+    if (result.state) {
+      setState(result.state)
+    } else {
+      setState((currentState) => ({
+        ...currentState,
+        classrooms: [result.classroom, ...currentState.classrooms],
+      }))
+    }
+
+    setIsCreating(false)
     setModalOpen(false)
   }
 
@@ -35,7 +68,11 @@ function EducatorDashboardPage() {
         <section className="dashboard-section">
           <h2>Your classrooms</h2>
           <div className="classroom-grid">
-            {state.classrooms.map((classroom) => (
+            {isLoading && <p className="microcopy">Loading classrooms...</p>}
+            {!isLoading && state.classrooms.length === 0 && (
+              <p className="microcopy">No classrooms yet. Create one to get started.</p>
+            )}
+            {!isLoading && state.classrooms.map((classroom) => (
               <Link className="classroom-card classroom-card-link" key={classroom.id} to={`/classroom/${classroom.id}`}>
                 <h3>{classroom.name}</h3>
                 <p>{classroom.subject}</p>
@@ -91,7 +128,9 @@ function EducatorDashboardPage() {
                 <strong>AUTO</strong>
                 <small>Invite link is generated after creation.</small>
               </div>
-              <PrimaryButton type="submit">Create Classroom</PrimaryButton>
+              <PrimaryButton type="submit" disabled={isCreating}>
+                {isCreating ? 'Creating...' : 'Create Classroom'}
+              </PrimaryButton>
             </form>
           </section>
         </div>

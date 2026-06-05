@@ -1,25 +1,30 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AppShell from '../components/AppShell.jsx'
 import PrimaryButton from '../components/PrimaryButton.jsx'
 import ProgressSteps from '../components/ProgressSteps.jsx'
 import SelectField from '../components/SelectField.jsx'
-import { saveTeacherProfile } from '../services/mockTeacher.js'
+import { saveTeacherProfile } from '../services/teacherProfile.js'
 
 const subjects = ['Robotics', 'Coding', 'Computer Science', 'Engineering', 'Mathematics', 'Science']
 
 function TeacherProfilePage() {
   const navigate = useNavigate()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
 
-    saveTeacherProfile({
+    setIsSubmitting(true)
+
+    await saveTeacherProfile({
       grades: formData.get('grades'),
       subjects: formData.getAll('subjects'),
       focusAreas: formData.get('focusAreas'),
     })
 
+    setIsSubmitting(false)
     navigate('/teacher-experience')
   }
 
@@ -71,7 +76,9 @@ function TeacherProfilePage() {
               <option>Automation</option>
             </SelectField>
 
-            <PrimaryButton type="submit">Continue</PrimaryButton>
+            <PrimaryButton type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Continue'}
+            </PrimaryButton>
           </form>
         </section>
       </section>

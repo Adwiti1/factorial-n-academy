@@ -19,9 +19,8 @@ services:
       - firebase
 
   firebase:
-    image: node:22-alpine
-    working_dir: /app
-    command: sh -c "npm install -g firebase-tools && firebase emulators:start --project demo-factorial-n-academy --host 0.0.0.0 --import .firebase-data --export-on-exit .firebase-data"
+    build: .
+    command: npm run emulators -- --host 0.0.0.0 --import .firebase-data --export-on-exit .firebase-data
     ports:
       - "4000:4000"
       - "8080:8080"
@@ -29,3 +28,19 @@ services:
       - "9199:9199"
     volumes:
       - .:/app
+      - /app/node_modules
+
+  seed:
+    build: .
+    command: npm run seed:emulators
+    profiles:
+      - seed
+    environment:
+      - FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID:-demo-factorial-n-academy}
+      - FIREBASE_AUTH_EMULATOR_HOST=firebase:9099
+      - FIRESTORE_EMULATOR_HOST=firebase:8080
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - firebase

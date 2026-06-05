@@ -6,12 +6,52 @@ service firebase.storage {
       return request.auth != null;
     }
 
+    function userDoc() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid));
+    }
+
+    function userRole(role) {
+      return signedIn()
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && userDoc().data.role == role;
+    }
+
+    function classroomDoc(classroomId) {
+      return firestore.get(/databases/(default)/documents/classrooms/$(classroomId));
+    }
+
+    function ownsClassroom(classroomId) {
+      return userRole('teacher')
+        && firestore.exists(/databases/(default)/documents/classrooms/$(classroomId))
+        && classroomDoc(classroomId).data.teacherId == request.auth.uid;
+    }
+
+    function isClassroomStudent(classroomId) {
+      return userRole('student')
+        && firestore.exists(/databases/(default)/documents/classrooms/$(classroomId))
+        && request.auth.uid in classroomDoc(classroomId).data.studentIds;
+    }
+
+    function canReadClassroomFiles(classroomId) {
+      return ownsClassroom(classroomId) || isClassroomStudent(classroomId);
+    }
+
     match /users/{userId}/{allPaths=**} {
       allow read, write: if signedIn() && request.auth.uid == userId;
     }
 
-    match /classrooms/{classroomId}/{allPaths=**} {
-      allow read, write: if signedIn();
+    match /classrooms/{classroomId}/assignments/{assignmentId}/{fileName} {
+      allow read: if canReadClassroomFiles(classroomId);
+      allow write: if ownsClassroom(classroomId)
+        && request.resource.size < 25 * 1024 * 1024;
+    }
+
+    match /classrooms/{classroomId}/submissions/{studentId}/{fileName} {
+      allow read: if ownsClassroom(classroomId)
+        || (isClassroomStudent(classroomId) && request.auth.uid == studentId);
+      allow write: if isClassroomStudent(classroomId)
+        && request.auth.uid == studentId
+        && request.resource.size < 25 * 1024 * 1024;
     }
   }
 }

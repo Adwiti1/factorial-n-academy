@@ -13,6 +13,7 @@ import PlatformIntroPage from './pages/PlatformIntroPage.jsx'
 import QuizBuilderPage from './pages/QuizBuilderPage.jsx'
 import RoleSelectionPage from './pages/RoleSelectionPage.jsx'
 import SignupPage from './pages/SignupPage.jsx'
+import StudentLoginPage from './pages/StudentLoginPage.jsx'
 import TeacherAnalyticsPage from './pages/TeacherAnalyticsPage.jsx'
 import TeacherExperiencePage from './pages/TeacherExperiencePage.jsx'
 import TeacherProfilePage from './pages/TeacherProfilePage.jsx'
@@ -39,6 +40,7 @@ function App() {
         <Route path="/quizzes" element={<QuizBuilderPage />} />
         <Route path="/analytics" element={<TeacherAnalyticsPage />} />
         <Route path="/student" element={<WelcomePage />} />
+        <Route path="/student/login" element={<StudentLoginPage />} />
         <Route path="/student/signup" element={<SignupPage />} />
         <Route path="/student/intro" element={<PlatformIntroPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />

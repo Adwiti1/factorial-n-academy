@@ -1,11 +1,45 @@
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout.jsx'
-import { getClassroomById, getTeacherState } from '../services/mockTeacher.js'
+import { getTeacherState } from '../services/mockTeacher.js'
+import { setSelectedClassroomId } from '../services/selectedClassroom.js'
+import { getTeacherClassroomById } from '../services/teacherClassrooms.js'
 
 function ClassroomDetailPage() {
   const { classroomId } = useParams()
-  const classroom = getClassroomById(classroomId)
+  const [classroom, setClassroom] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
   const { analytics, assignments, modules } = getTeacherState()
+
+  useEffect(() => {
+    let isMounted = true
+    setSelectedClassroomId(classroomId)
+
+    async function loadClassroom() {
+      const result = await getTeacherClassroomById(classroomId)
+
+      if (isMounted) {
+        setClassroom(result.classroom)
+        setIsLoading(false)
+      }
+    }
+
+    loadClassroom()
+
+    return () => {
+      isMounted = false
+    }
+  }, [classroomId])
+
+  if (isLoading) {
+    return (
+      <DashboardLayout showAssistant={false}>
+        <section className="dashboard-content">
+          <p className="microcopy">Loading classroom...</p>
+        </section>
+      </DashboardLayout>
+    )
+  }
 
   if (!classroom) {
     return <Navigate to="/dashboard" replace />
