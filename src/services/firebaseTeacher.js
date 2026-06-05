@@ -26,7 +26,7 @@ export function canUseFirebase() {
 }
 
 function currentUserId() {
-  if (!auth.currentUser) {
+  if (!canUseFirebase() || !auth.currentUser) {
     throw new Error('A signed-in Firebase user is required.')
   }
 
@@ -172,6 +172,10 @@ export async function getFirebaseTeacherClassrooms() {
 }
 
 export async function getFirebaseClassroomById(classroomId) {
+  if (!canUseFirebase()) {
+    throw new Error('Firebase is not configured.')
+  }
+
   const classroomRef = doc(db, 'classrooms', classroomId)
   const snapshot = await getDoc(classroomRef)
 
@@ -186,6 +190,10 @@ export async function getFirebaseClassroomById(classroomId) {
 }
 
 export async function getFirebaseModulesByClassroom(classroomId) {
+  if (!canUseFirebase()) {
+    throw new Error('Firebase is not configured.')
+  }
+
   const modulesQuery = query(
     collection(db, 'modules'),
     where('classroomId', '==', classroomId),
@@ -217,6 +225,10 @@ export async function createFirebaseModule(module) {
 }
 
 export async function getFirebaseAssignmentsByClassroom(classroomId) {
+  if (!canUseFirebase()) {
+    throw new Error('Firebase is not configured.')
+  }
+
   const assignmentsQuery = query(
     collection(db, 'assignments'),
     where('classroomId', '==', classroomId),
@@ -269,6 +281,10 @@ export async function createFirebaseAssignment(assignment) {
 }
 
 export async function getFirebaseAnalyticsByClassroom(classroomId, seedAnalytics) {
+  if (!canUseFirebase()) {
+    throw new Error('Firebase is not configured.')
+  }
+
   const analyticsRef = doc(db, 'analytics', classroomId)
   const snapshot = await getDoc(analyticsRef)
 
