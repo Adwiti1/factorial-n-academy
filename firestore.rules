@@ -10,66 +10,112 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == userId;
     }
 
+    function existingRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
     function userRole(role) {
       return signedIn()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+        && existingRole() == role;
+    }
+
+    function teacherOwnsClassroomData(classroomData) {
+      return userRole('teacher') && classroomData.teacherId == request.auth.uid;
     }
 
     function ownsClassroom(classroomId) {
       return signedIn()
         && exists(/databases/$(database)/documents/classrooms/$(classroomId))
-        && get(/databases/$(database)/documents/classrooms/$(classroomId)).data.teacherId == request.auth.uid;
+        && teacherOwnsClassroomData(get(/databases/$(database)/documents/classrooms/$(classroomId)).data);
+    }
+
+    function classroomData(classroomId) {
+      return get(/databases/$(database)/documents/classrooms/$(classroomId)).data;
+    }
+
+    function isClassroomStudent(classroomId) {
+      return userRole('student')
+        && exists(/databases/$(database)/documents/classrooms/$(classroomId))
+        && request.auth.uid in classroomData(classroomId).studentIds;
+    }
+
+    function canReadClassroom(classroomId) {
+      return ownsClassroom(classroomId) || isClassroomStudent(classroomId);
+    }
+
+    function hasClassroomId(data) {
+      return data.classroomId is string;
     }
 
     match /users/{userId} {
-      allow create: if isOwner(userId);
-      allow read, update: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.role in ['student', 'teacher'];
+      allow read: if isOwner(userId);
+      allow update: if isOwner(userId)
+        && request.resource.data.role == resource.data.role;
       allow delete: if false;
     }
 
     match /teachers/{teacherId} {
-      allow create, read, update: if isOwner(teacherId);
+      allow create, read, update: if isOwner(teacherId) && userRole('teacher');
       allow delete: if false;
     }
 
     match /students/{studentId} {
-      allow create, read, update: if isOwner(studentId);
+      allow create, read, update: if isOwner(studentId) && userRole('student');
       allow delete: if false;
     }
 
     match /classrooms/{classroomId} {
-      allow create: if userRole('teacher') && request.resource.data.teacherId == request.auth.uid;
-      allow read, update: if signedIn()
-        && (resource.data.teacherId == request.auth.uid || request.auth.uid in resource.data.studentIds);
-      allow delete: if signedIn() && resource.data.teacherId == request.auth.uid;
+      allow create: if userRole('teacher')
+        && request.resource.data.teacherId == request.auth.uid
+        && request.resource.data.studentIds is list;
+      allow read: if canReadClassroom(classroomId);
+      allow update, delete: if ownsClassroom(classroomId);
     }
 
     match /modules/{moduleId} {
-      allow create: if userRole('teacher') && ownsClassroom(request.resource.data.classroomId);
-      allow read, update, delete: if ownsClassroom(resource.data.classroomId);
+      allow create: if userRole('teacher')
+        && hasClassroomId(request.resource.data)
+        && ownsClassroom(request.resource.data.classroomId);
+      allow read: if hasClassroomId(resource.data) && canReadClassroom(resource.data.classroomId);
+      allow update, delete: if hasClassroomId(resource.data) && ownsClassroom(resource.data.classroomId);
     }
 
     match /assignments/{assignmentId} {
-      allow create: if userRole('teacher') && ownsClassroom(request.resource.data.classroomId);
-      allow read, update, delete: if ownsClassroom(resource.data.classroomId);
+      allow create: if userRole('teacher')
+        && hasClassroomId(request.resource.data)
+        && ownsClassroom(request.resource.data.classroomId);
+      allow read: if hasClassroomId(resource.data) && canReadClassroom(resource.data.classroomId);
+      allow update, delete: if hasClassroomId(resource.data) && ownsClassroom(resource.data.classroomId);
     }
 
     match /quizzes/{quizId} {
-      allow create: if userRole('teacher') && ownsClassroom(request.resource.data.classroomId);
-      allow read, update, delete: if ownsClassroom(resource.data.classroomId);
+      allow create: if userRole('teacher')
+        && hasClassroomId(request.resource.data)
+        && ownsClassroom(request.resource.data.classroomId);
+      allow read: if hasClassroomId(resource.data) && canReadClassroom(resource.data.classroomId);
+      allow update, delete: if hasClassroomId(resource.data) && ownsClassroom(resource.data.classroomId);
     }
 
     match /submissions/{submissionId} {
-      allow create: if signedIn() && request.resource.data.studentId == request.auth.uid;
-      allow read, update: if signedIn()
+      allow create: if userRole('student')
+        && hasClassroomId(request.resource.data)
+        && request.resource.data.studentId == request.auth.uid
+        && isClassroomStudent(request.resource.data.classroomId);
+      allow read: if signedIn()
+        && hasClassroomId(resource.data)
         && (resource.data.studentId == request.auth.uid || ownsClassroom(resource.data.classroomId));
+      allow update: if hasClassroomId(resource.data) && ownsClassroom(resource.data.classroomId);
       allow delete: if false;
     }
 
     match /analytics/{classroomId} {
       allow read: if ownsClassroom(classroomId);
-      allow write: if false;
+      allow create, update: if ownsClassroom(classroomId)
+        && request.resource.data.teacherId == request.auth.uid;
+      allow delete: if false;
     }
   }
 }

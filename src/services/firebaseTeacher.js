@@ -1,4 +1,9 @@
 import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+} from 'firebase/auth'
+import {
   addDoc,
   collection,
   doc,
@@ -7,10 +12,18 @@ import {
   query,
   serverTimestamp,
   setDoc,
-  updateDoc,
   where,
 } from 'firebase/firestore'
-import { auth, db } from '../lib/firebase.js'
+import {
+  getDownloadURL,
+  ref,
+  uploadBytes,
+} from 'firebase/storage'
+import { auth, db, isFirebaseConfigured, storage } from '../lib/firebase.js'
+
+export function canUseFirebase() {
+  return isFirebaseConfigured
+}
 
 function currentUserId() {
   if (!auth.currentUser) {
@@ -28,6 +41,47 @@ function makeJoinCode(name) {
     .padEnd(6, 'X')
 }
 
+export async function createFirebaseEducatorAccount(account) {
+  if (!canUseFirebase()) {
+    throw new Error('Firebase is not configured.')
+  }
+
+  const credential = await createUserWithEmailAndPassword(
+    auth,
+    account.email,
+    account.password,
+  )
+
+  await updateProfile(credential.user, {
+    displayName: account.displayName,
+  })
+
+  return saveFirebaseEducatorAccount({
+    ...account,
+    email: credential.user.email,
+  })
+}
+
+export async function loginFirebaseEducator({ email, password }) {
+  if (!canUseFirebase()) {
+    throw new Error('Firebase is not configured.')
+  }
+
+  const credential = await signInWithEmailAndPassword(auth, email, password)
+  const userSnapshot = await getDoc(doc(db, 'users', credential.user.uid))
+
+  if (userSnapshot.exists() && userSnapshot.data().role !== 'teacher') {
+    throw new Error('This account is not an educator account.')
+  }
+
+  return {
+    id: credential.user.uid,
+    email: credential.user.email,
+    displayName: credential.user.displayName,
+    role: userSnapshot.exists() ? userSnapshot.data().role : 'teacher',
+  }
+}
+
 export async function saveFirebaseEducatorAccount(account) {
   const teacherId = currentUserId()
   const baseProfile = {
@@ -42,8 +96,8 @@ export async function saveFirebaseEducatorAccount(account) {
   await setDoc(
     doc(db, 'teachers', teacherId),
     {
-      schoolName: account.schoolName,
-      countryRegion: account.countryRegion,
+      schoolName: account.schoolName ?? account.school,
+      countryRegion: account.countryRegion ?? account.region,
       updatedAt: serverTimestamp(),
     },
     { merge: true },
@@ -54,10 +108,26 @@ export async function saveFirebaseEducatorAccount(account) {
 
 export async function saveFirebaseTeacherProfile(profile) {
   const teacherId = currentUserId()
-  await updateDoc(doc(db, 'teachers', teacherId), {
-    ...profile,
-    updatedAt: serverTimestamp(),
-  })
+  await setDoc(
+    doc(db, 'teachers', teacherId),
+    {
+      ...profile,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  )
+}
+
+export async function saveFirebaseTeacherExperience(experience) {
+  const teacherId = currentUserId()
+  await setDoc(
+    doc(db, 'teachers', teacherId),
+    {
+      experience,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  )
 }
 
 export async function createFirebaseClassroom(classroom) {
@@ -68,6 +138,7 @@ export async function createFirebaseClassroom(classroom) {
     ...classroom,
     teacherId,
     joinCode,
+    inviteLink: `https://factorialn.academy/join/${joinCode}`,
     studentIds: [],
     progress: 0,
     upcoming: 'Invite students to begin',
@@ -80,6 +151,7 @@ export async function createFirebaseClassroom(classroom) {
     ...classroom,
     teacherId,
     joinCode,
+    inviteLink: `https://factorialn.academy/join/${joinCode}`,
     students: 0,
     progress: 0,
   }
@@ -110,5 +182,116 @@ export async function getFirebaseClassroomById(classroomId) {
   return {
     id: snapshot.id,
     ...snapshot.data(),
+  }
+}
+
+export async function getFirebaseModulesByClassroom(classroomId) {
+  const modulesQuery = query(
+    collection(db, 'modules'),
+    where('classroomId', '==', classroomId),
+  )
+  const snapshot = await getDocs(modulesQuery)
+
+  return snapshot.docs.map((moduleDoc) => ({
+    id: moduleDoc.id,
+    ...moduleDoc.data(),
+  }))
+}
+
+export async function createFirebaseModule(module) {
+  const teacherId = currentUserId()
+  const moduleRef = await addDoc(collection(db, 'modules'), {
+    ...module,
+    teacherId,
+    lessons: module.lessons ?? [],
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  })
+
+  return {
+    id: moduleRef.id,
+    ...module,
+    teacherId,
+    lessons: module.lessons ?? [],
+  }
+}
+
+export async function getFirebaseAssignmentsByClassroom(classroomId) {
+  const assignmentsQuery = query(
+    collection(db, 'assignments'),
+    where('classroomId', '==', classroomId),
+  )
+  const snapshot = await getDocs(assignmentsQuery)
+
+  return snapshot.docs.map((assignmentDoc) => ({
+    id: assignmentDoc.id,
+    ...assignmentDoc.data(),
+  }))
+}
+
+export async function createFirebaseAssignment(assignment) {
+  const teacherId = currentUserId()
+  const assignmentRef = doc(collection(db, 'assignments'))
+  const resourceFiles = assignment.resourceFiles ?? []
+  const uploadedResources = await Promise.all(
+    resourceFiles.map(async (file) => {
+      const filePath = `classrooms/${assignment.classroomId}/assignments/${assignmentRef.id}/${file.name}`
+      const fileRef = ref(storage, filePath)
+      await uploadBytes(fileRef, file)
+
+      return {
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        size: file.size,
+        path: filePath,
+        url: await getDownloadURL(fileRef),
+      }
+    }),
+  )
+
+  const assignmentData = {
+    ...assignment,
+    resourceFiles: [],
+    uploadedResources,
+    teacherId,
+    submissions: 0,
+    status: 'Assigned',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }
+
+  await setDoc(assignmentRef, assignmentData)
+
+  return {
+    id: assignmentRef.id,
+    ...assignmentData,
+  }
+}
+
+export async function getFirebaseAnalyticsByClassroom(classroomId, seedAnalytics) {
+  const analyticsRef = doc(db, 'analytics', classroomId)
+  const snapshot = await getDoc(analyticsRef)
+
+  if (snapshot.exists()) {
+    return {
+      id: snapshot.id,
+      ...snapshot.data(),
+    }
+  }
+
+  const teacherId = currentUserId()
+  const analyticsData = {
+    classroomId,
+    teacherId,
+    ...seedAnalytics,
+    seeded: true,
+    updatedAt: serverTimestamp(),
+  }
+
+  await setDoc(analyticsRef, analyticsData)
+
+  return {
+    id: classroomId,
+    ...analyticsData,
   }
 }

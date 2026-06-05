@@ -164,3 +164,18 @@ export function createClassroom(classroom) {
     classrooms: [nextClassroom, ...state.classrooms],
   })
 }
+
+export function createAssignment(assignment) {
+  const state = readState()
+  const nextAssignment = {
+    id: crypto.randomUUID(),
+    submissions: 0,
+    status: 'Assigned',
+    ...assignment,
+  }
+
+  return writeState({
+    ...state,
+    assignments: [nextAssignment, ...state.assignments],
+  })
+}
