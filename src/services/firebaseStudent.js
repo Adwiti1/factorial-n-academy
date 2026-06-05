@@ -12,7 +12,7 @@ import {
 import { auth, db, isFirebaseConfigured } from '../lib/firebase.js'
 
 function currentUserId() {
-  if (!auth.currentUser) {
+  if (!isFirebaseConfigured || !auth.currentUser) {
     throw new Error('A signed-in Firebase user is required.')
   }
 
