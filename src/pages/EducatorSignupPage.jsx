@@ -8,23 +8,30 @@ import { signupEducator } from '../services/educatorSignup.js'
 function EducatorSignupPage() {
   const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   async function handleSubmit(event) {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
 
     setIsSubmitting(true)
+    setErrorMessage('')
 
-    await signupEducator({
-      displayName: formData.get('displayName'),
-      email: formData.get('email'),
-      password: formData.get('password'),
-      schoolName: formData.get('school'),
-      countryRegion: formData.get('region'),
-    })
+    try {
+      await signupEducator({
+        displayName: formData.get('displayName'),
+        email: formData.get('email'),
+        password: formData.get('password'),
+        schoolName: formData.get('school'),
+        countryRegion: formData.get('region'),
+      })
 
-    setIsSubmitting(false)
-    navigate('/intro')
+      navigate('/intro')
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -40,7 +47,7 @@ function EducatorSignupPage() {
           <form className="auth-form educator-auth-form" onSubmit={handleSubmit}>
             <FormField id="displayName" label="Display Name" name="displayName" required />
             <FormField id="email" label="Email" name="email" required type="email" />
-            <FormField id="password" label="Password" name="password" required type="password" />
+            <FormField id="password" label="Password" minLength="6" name="password" required type="password" />
             <FormField id="school" label="School / Institution Name" name="school" required />
             <label className="field" htmlFor="region">
               <span>Country/Region</span>
@@ -55,6 +62,7 @@ function EducatorSignupPage() {
               {isSubmitting ? 'Creating...' : 'Create Educator Account'}
             </PrimaryButton>
           </form>
+          {errorMessage && <p className="microcopy">{errorMessage}</p>}
           <p className="microcopy">
             Already have an account? <Link to="/login">Login</Link>
           </p>

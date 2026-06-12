@@ -2,6 +2,7 @@ import {
   saveFirebaseStudentGoals,
   saveFirebaseStudentOnboarding,
 } from './firebaseStudent.js'
+import { requireMockFallback } from './mockFallback.js'
 import { saveOnboardingState } from './mockOnboarding.js'
 
 export async function saveStudentOnboarding(onboarding) {
@@ -13,7 +14,7 @@ export async function saveStudentOnboarding(onboarding) {
       onboarding: savedOnboarding,
     }
   } catch (error) {
-    console.warn('Using mock student onboarding fallback:', error.message)
+    requireMockFallback(error, 'Student onboarding save failed')
 
     return {
       source: 'mock',
@@ -31,7 +32,7 @@ export async function saveStudentGoals(goals) {
       goals: savedGoals,
     }
   } catch (error) {
-    console.warn('Using mock student goals fallback:', error.message)
+    requireMockFallback(error, 'Student goals save failed')
 
     return {
       source: 'mock',

@@ -9,20 +9,28 @@ import { signupStudent } from '../services/studentAuth.js'
 function SignupPage() {
   const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   async function handleSubmit(event) {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
 
     setIsSubmitting(true)
-    await signupStudent({
-      displayName: formData.get('displayName'),
-      email: formData.get('email'),
-      password: formData.get('password'),
-    })
+    setErrorMessage('')
 
-    setIsSubmitting(false)
-    navigate('/student/intro')
+    try {
+      await signupStudent({
+        displayName: formData.get('displayName'),
+        email: formData.get('email'),
+        password: formData.get('password'),
+      })
+
+      navigate('/student/intro')
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -37,11 +45,12 @@ function SignupPage() {
         <form className="auth-form" onSubmit={handleSubmit}>
           <FormField id="displayName" label="Display Name" name="displayName" required />
           <FormField id="email" label="Email" name="email" required type="email" />
-          <FormField id="password" label="Password" name="password" required type="password" />
+          <FormField id="password" label="Password" minLength="6" name="password" required type="password" />
           <PrimaryButton type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Creating...' : 'Sign Up'}
           </PrimaryButton>
         </form>
+        {errorMessage && <p className="microcopy">{errorMessage}</p>}
         <p className="microcopy">
           Already have an account? <Link to="/student/login">Login</Link>
         </p>

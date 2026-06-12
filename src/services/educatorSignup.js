@@ -1,14 +1,24 @@
 import { createFirebaseEducatorAccount } from './firebaseTeacher.js'
+import { signupUser } from './mockAuth.js'
+import { requireMockFallback } from './mockFallback.js'
 import { saveEducatorAccount } from './mockTeacher.js'
 
 function saveMockEducatorAccount(account) {
-  return saveEducatorAccount({
+  const user = signupUser({
     displayName: account.displayName,
     email: account.email,
-    passwordLength: account.password.length,
+    password: account.password,
+    role: 'teacher',
+  })
+
+  saveEducatorAccount({
+    displayName: account.displayName,
+    email: account.email,
     school: account.schoolName,
     region: account.countryRegion,
   })
+
+  return user
 }
 
 export async function signupEducator(account) {
@@ -19,7 +29,7 @@ export async function signupEducator(account) {
       user,
     }
   } catch (error) {
-    console.warn('Using mock educator signup fallback:', error.message)
+    requireMockFallback(error, 'Educator signup failed')
 
     return {
       source: 'mock',

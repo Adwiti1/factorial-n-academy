@@ -10,6 +10,10 @@ import {
   setDoc,
 } from 'firebase/firestore'
 import { auth, db, isFirebaseConfigured } from '../lib/firebase.js'
+import {
+  sendCurrentUserVerification,
+  syncAccountVerificationStatus,
+} from './firebaseAccount.js'
 
 function currentUserId() {
   if (!isFirebaseConfigured || !auth.currentUser) {
@@ -39,6 +43,7 @@ export async function createFirebaseStudentAccount(account) {
     {
       displayName: account.displayName,
       email: credential.user.email,
+      emailVerified: credential.user.emailVerified,
       role: 'student',
       language: account.language ?? 'English',
       createdAt: serverTimestamp(),
@@ -51,15 +56,23 @@ export async function createFirebaseStudentAccount(account) {
     {
       displayName: account.displayName,
       email: credential.user.email,
+      emailVerified: credential.user.emailVerified,
       updatedAt: serverTimestamp(),
     },
     { merge: true },
   )
 
+  try {
+    await sendCurrentUserVerification()
+  } catch (error) {
+    console.warn('Email verification could not be sent:', error.message)
+  }
+
   return {
     id: credential.user.uid,
     displayName: account.displayName,
     email: credential.user.email,
+    emailVerified: credential.user.emailVerified,
     role: 'student',
   }
 }
@@ -76,10 +89,13 @@ export async function loginFirebaseStudent({ email, password }) {
     throw new Error('This account is not a student account.')
   }
 
+  await syncAccountVerificationStatus('student')
+
   return {
     id: credential.user.uid,
     email: credential.user.email,
     displayName: credential.user.displayName,
+    emailVerified: credential.user.emailVerified,
     role: userSnapshot.exists() ? userSnapshot.data().role : 'student',
   }
 }

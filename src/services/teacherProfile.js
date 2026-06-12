@@ -1,4 +1,5 @@
 import { saveFirebaseTeacherProfile } from './firebaseTeacher.js'
+import { requireMockFallback } from './mockFallback.js'
 import { saveTeacherProfile as saveMockTeacherProfile } from './mockTeacher.js'
 
 export async function saveTeacherProfile(profile) {
@@ -9,7 +10,7 @@ export async function saveTeacherProfile(profile) {
       profile,
     }
   } catch (error) {
-    console.warn('Using mock teacher profile fallback:', error.message)
+    requireMockFallback(error, 'Teacher profile save failed')
 
     return {
       source: 'mock',
