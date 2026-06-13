@@ -1,4 +1,5 @@
-const STORAGE_KEY = 'factorial-n-academy:teacher'
+const ACTIVE_TEACHER_KEY = 'factorial-n-academy:active-teacher'
+const STORAGE_PREFIX = 'factorial-n-academy:teacher'
 
 const defaultState = {
   educator: null,
@@ -11,91 +12,33 @@ const defaultState = {
     level: 'Intermediate',
     certification: 'B.Ed',
   },
-  classrooms: [
-    {
-      id: 'robotics-8a',
-      name: 'Robotics 8A',
-      students: 28,
-      progress: 74,
-      upcoming: 'Sensor maze challenge',
-      subject: 'Robotics',
-      grade: 'Grade 7-9',
-      joinCode: 'ROBO8A',
-    },
-    {
-      id: 'python-beginners',
-      name: 'Python Beginners',
-      students: 22,
-      progress: 68,
-      upcoming: 'Loops mini quiz',
-      subject: 'Coding',
-      grade: 'Grade 7-9',
-      joinCode: 'PYLOOP',
-    },
-    {
-      id: 'stem-club',
-      name: 'STEM Club',
-      students: 34,
-      progress: 81,
-      upcoming: 'Drone design sprint',
-      subject: 'Engineering',
-      grade: 'Grade 10-12',
-      joinCode: 'STEM34',
-    },
-  ],
-  modules: [
-    {
-      id: 'module-1',
-      title: 'Module 1',
-      lessons: [
-        {
-          title: 'Robotics Foundations',
-          description: 'Introduce sensors, motors, and classroom safety.',
-          time: '35 min',
-        },
-        {
-          title: 'Python Control Flow',
-          description: 'Use loops to control repeated robot actions.',
-          time: '45 min',
-        },
-      ],
-    },
-    {
-      id: 'module-2',
-      title: 'Module 2',
-      lessons: [
-        {
-          title: 'Mission Map Challenge',
-          description: 'Teams plan an automated route through obstacles.',
-          time: '50 min',
-        },
-      ],
-    },
-  ],
-  assignments: [
-    {
-      id: 'assignment-1',
-      title: 'Build a Rescue Robot Brief',
-      dueDate: 'Friday',
-      submissions: 18,
-      status: 'Draft rubric ready',
-    },
-  ],
+  classrooms: [],
+  modules: [],
+  assignments: [],
   analytics: {
-    completionRate: 76,
-    activeStudents: 84,
-    quizAverage: 82,
-    aiTutorUsage: 41,
+    completionRate: 0,
+    activeStudents: 0,
+    quizAverage: 0,
+    aiTutorUsage: 0,
   },
 }
 
+function accountIdFromEmail(email) {
+  return email ? email.trim().toLowerCase() : 'guest-teacher'
+}
+
+function storageKey() {
+  const activeTeacherId = window.localStorage.getItem(ACTIVE_TEACHER_KEY) || 'guest-teacher'
+  return `${STORAGE_PREFIX}:${activeTeacherId}`
+}
+
 function readState() {
-  const savedState = window.localStorage.getItem(STORAGE_KEY)
+  const savedState = window.localStorage.getItem(storageKey())
   return savedState ? JSON.parse(savedState) : defaultState
 }
 
 function writeState(nextState) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState))
+  window.localStorage.setItem(storageKey(), JSON.stringify(nextState))
   return nextState
 }
 
@@ -108,12 +51,36 @@ export function getClassroomById(classroomId) {
 }
 
 export function saveEducatorAccount(account) {
+  const educatorId = accountIdFromEmail(account.email)
+  window.localStorage.setItem(ACTIVE_TEACHER_KEY, educatorId)
+
   const state = readState()
   return writeState({
     ...state,
     educator: {
-      id: crypto.randomUUID(),
+      id: educatorId,
       ...account,
+      createdAt: new Date().toISOString(),
+    },
+  })
+}
+
+export function activateEducatorAccount(email) {
+  const educatorId = accountIdFromEmail(email)
+  window.localStorage.setItem(ACTIVE_TEACHER_KEY, educatorId)
+
+  const state = readState()
+
+  if (state.educator) {
+    return state
+  }
+
+  return writeState({
+    ...state,
+    educator: {
+      id: educatorId,
+      displayName: 'Educator',
+      email,
       createdAt: new Date().toISOString(),
     },
   })
@@ -151,6 +118,7 @@ export function createClassroom(classroom) {
 
   const nextClassroom = {
     id: crypto.randomUUID(),
+    studentIds: classroom.studentIds ?? [],
     students: 0,
     progress: 0,
     upcoming: 'Invite students to begin',

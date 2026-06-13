@@ -8,7 +8,7 @@ function TeacherWelcomePage() {
     <AppShell>
       <AuthCard className="teacher-welcome-card">
         <div className="educator-badge" aria-hidden="true">
-          <span></span>
+          <span>FN</span>
         </div>
         <div className="card-heading teacher-heading">
           <h1>Welcome, Educator</h1>
