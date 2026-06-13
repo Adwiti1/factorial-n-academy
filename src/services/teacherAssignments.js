@@ -6,6 +6,7 @@ import {
   createAssignment as createMockAssignment,
   getTeacherState,
 } from './mockTeacher.js'
+import { requireMockFallback } from './mockFallback.js'
 
 function normalizeAssignment(assignment) {
   return {
@@ -26,7 +27,7 @@ export async function getTeacherAssignments(classroomId) {
       assignments: assignments.map(normalizeAssignment),
     }
   } catch (error) {
-    console.warn('Using mock assignment list fallback:', error.message)
+    requireMockFallback(error, 'Assignment list load failed')
 
     return {
       source: 'mock',
@@ -44,7 +45,7 @@ export async function createTeacherAssignment(assignment) {
       assignment: normalizeAssignment(nextAssignment),
     }
   } catch (error) {
-    console.warn('Using mock assignment create fallback:', error.message)
+    requireMockFallback(error, 'Assignment create failed')
 
     const nextState = createMockAssignment({
       ...assignment,

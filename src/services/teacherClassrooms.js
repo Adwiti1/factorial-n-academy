@@ -8,6 +8,7 @@ import {
   getClassroomById as getMockClassroomById,
   getTeacherState,
 } from './mockTeacher.js'
+import { requireMockFallback } from './mockFallback.js'
 
 function normalizeClassroom(classroom) {
   return {
@@ -30,7 +31,7 @@ export async function getTeacherClassroomState() {
       },
     }
   } catch (error) {
-    console.warn('Using mock classroom list fallback:', error.message)
+    requireMockFallback(error, 'Classroom list load failed')
 
     return {
       source: 'mock',
@@ -48,7 +49,7 @@ export async function createTeacherClassroom(classroom) {
       classroom: normalizeClassroom(nextClassroom),
     }
   } catch (error) {
-    console.warn('Using mock classroom create fallback:', error.message)
+    requireMockFallback(error, 'Classroom create failed')
 
     const nextState = createMockClassroom(classroom)
     return {
@@ -75,7 +76,7 @@ export async function getTeacherClassroomById(classroomId) {
       classroom: normalizeClassroom(classroom),
     }
   } catch (error) {
-    console.warn('Using mock classroom detail fallback:', error.message)
+    requireMockFallback(error, 'Classroom detail load failed')
 
     return {
       source: 'mock',

@@ -12,6 +12,7 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  writeBatch,
   where,
 } from 'firebase/firestore'
 import {
@@ -20,6 +21,10 @@ import {
   uploadBytes,
 } from 'firebase/storage'
 import { auth, db, isFirebaseConfigured, storage } from '../lib/firebase.js'
+import {
+  sendCurrentUserVerification,
+  syncAccountVerificationStatus,
+} from './firebaseAccount.js'
 
 export function canUseFirebase() {
   return isFirebaseConfigured
@@ -56,10 +61,18 @@ export async function createFirebaseEducatorAccount(account) {
     displayName: account.displayName,
   })
 
-  return saveFirebaseEducatorAccount({
+  const savedAccount = await saveFirebaseEducatorAccount({
     ...account,
     email: credential.user.email,
   })
+
+  try {
+    await sendCurrentUserVerification()
+  } catch (error) {
+    console.warn('Email verification could not be sent:', error.message)
+  }
+
+  return savedAccount
 }
 
 export async function loginFirebaseEducator({ email, password }) {
@@ -74,10 +87,13 @@ export async function loginFirebaseEducator({ email, password }) {
     throw new Error('This account is not an educator account.')
   }
 
+  await syncAccountVerificationStatus('teacher')
+
   return {
     id: credential.user.uid,
     email: credential.user.email,
     displayName: credential.user.displayName,
+    emailVerified: credential.user.emailVerified,
     role: userSnapshot.exists() ? userSnapshot.data().role : 'teacher',
   }
 }
@@ -87,6 +103,7 @@ export async function saveFirebaseEducatorAccount(account) {
   const baseProfile = {
     displayName: account.displayName,
     email: account.email,
+    emailVerified: auth.currentUser.emailVerified,
     role: 'teacher',
     language: account.language ?? 'English',
     createdAt: serverTimestamp(),
@@ -133,27 +150,33 @@ export async function saveFirebaseTeacherExperience(experience) {
 export async function createFirebaseClassroom(classroom) {
   const teacherId = currentUserId()
   const joinCode = makeJoinCode(classroom.name)
-
-  const classroomRef = await addDoc(collection(db, 'classrooms'), {
+  const classroomRef = doc(collection(db, 'classrooms'))
+  const batch = writeBatch(db)
+  const classroomData = {
     ...classroom,
     teacherId,
     joinCode,
     inviteLink: `https://factorialn.academy/join/${joinCode}`,
     studentIds: [],
+    students: 0,
     progress: 0,
     upcoming: 'Invite students to begin',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
+  }
+
+  batch.set(classroomRef, classroomData)
+  batch.set(doc(db, 'classroomJoinCodes', joinCode), {
+    classroomId: classroomRef.id,
+    teacherId,
+    classroomName: classroom.name,
+    createdAt: serverTimestamp(),
   })
+  await batch.commit()
 
   return {
     id: classroomRef.id,
-    ...classroom,
-    teacherId,
-    joinCode,
-    inviteLink: `https://factorialn.academy/join/${joinCode}`,
-    students: 0,
-    progress: 0,
+    ...classroomData,
   }
 }
 

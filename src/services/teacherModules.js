@@ -2,6 +2,7 @@ import {
   createFirebaseModule,
   getFirebaseModulesByClassroom,
 } from './firebaseTeacher.js'
+import { requireMockFallback } from './mockFallback.js'
 import { getTeacherState } from './mockTeacher.js'
 
 function normalizeModule(module) {
@@ -20,7 +21,7 @@ export async function getTeacherModules(classroomId) {
       modules: modules.map(normalizeModule),
     }
   } catch (error) {
-    console.warn('Using mock module list fallback:', error.message)
+    requireMockFallback(error, 'Module list load failed')
 
     return {
       source: 'mock',
@@ -38,7 +39,7 @@ export async function createTeacherModule(module) {
       module: normalizeModule(nextModule),
     }
   } catch (error) {
-    console.warn('Module save is waiting for Firebase:', error.message)
+    requireMockFallback(error, 'Module save failed')
 
     return {
       source: 'mock',
