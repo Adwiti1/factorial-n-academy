@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
+import AccountSettingsPage from './pages/AccountSettingsPage.jsx'
 import AssignmentCreationPage from './pages/AssignmentCreationPage.jsx'
 import ClassroomDetailPage from './pages/ClassroomDetailPage.jsx'
 import EducatorDashboardPage from './pages/EducatorDashboardPage.jsx'
@@ -9,11 +10,13 @@ import GoalSelectionPage from './pages/GoalSelectionPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import ModuleBuilderPage from './pages/ModuleBuilderPage.jsx'
 import OnboardingPage from './pages/OnboardingPage.jsx'
+import PasswordResetPage from './pages/PasswordResetPage.jsx'
 import PlatformIntroPage from './pages/PlatformIntroPage.jsx'
 import QuizBuilderPage from './pages/QuizBuilderPage.jsx'
 import RoleSelectionPage from './pages/RoleSelectionPage.jsx'
 import SignupPage from './pages/SignupPage.jsx'
 import StudentLoginPage from './pages/StudentLoginPage.jsx'
+import StudentDashboardPage from './pages/StudentDashboardPage.jsx'
 import TeacherAnalyticsPage from './pages/TeacherAnalyticsPage.jsx'
 import TeacherExperiencePage from './pages/TeacherExperiencePage.jsx'
 import TeacherProfilePage from './pages/TeacherProfilePage.jsx'
@@ -29,6 +32,8 @@ function App() {
         <Route path="/teacher" element={<TeacherWelcomePage />} />
         <Route path="/signup" element={<EducatorSignupPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/account" element={<AccountSettingsPage />} />
+        <Route path="/password-reset" element={<PasswordResetPage />} />
         <Route path="/intro" element={<EducatorIntroPage />} />
         <Route path="/teacher-profile" element={<TeacherProfilePage />} />
         <Route path="/teacher-experience" element={<TeacherExperiencePage />} />
@@ -43,6 +48,10 @@ function App() {
         <Route path="/student/login" element={<StudentLoginPage />} />
         <Route path="/student/signup" element={<SignupPage />} />
         <Route path="/student/intro" element={<PlatformIntroPage />} />
+        <Route path="/student/dashboard" element={<StudentDashboardPage />} />
+        <Route path="/student/modules" element={<StudentDashboardPage view="modules" />} />
+        <Route path="/student/assignments" element={<StudentDashboardPage view="assignments" />} />
+        <Route path="/student/grades" element={<StudentDashboardPage view="grades" />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/goals" element={<GoalSelectionPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
