@@ -15,7 +15,13 @@ const languages = [
   { code: 'es', label: 'Spanish' },
 ]
 
-function DashboardLayout({ children, navItems = defaultNavItems, showAssistant = true }) {
+function DashboardLayout({
+  children,
+  navItems = defaultNavItems,
+  showAssistant = true,
+  showHelp = true,
+  workspaceLabel = 'Teacher workspace',
+}) {
   const [language, setLanguage] = useState(
     () => window.localStorage.getItem('factorial-n-academy:language') || 'en',
   )
@@ -27,7 +33,7 @@ function DashboardLayout({ children, navItems = defaultNavItems, showAssistant =
 
   return (
     <main className="dashboard-shell">
-      <aside className="teacher-sidebar" aria-label="Teacher workspace">
+      <aside className="teacher-sidebar" aria-label={workspaceLabel}>
         <nav>
           {navItems.map(([label, href, hint]) => (
             <NavLink className="sidebar-link" key={label} to={href}>
@@ -55,9 +61,11 @@ function DashboardLayout({ children, navItems = defaultNavItems, showAssistant =
         </header>
         {children}
       </section>
-      <div className="dashboard-help-button" aria-label="Help">
-        ?
-      </div>
+      {showHelp && (
+        <div className="dashboard-help-button" aria-label="Help">
+          ?
+        </div>
+      )}
       {showAssistant && <FloatingAssistant />}
     </main>
   )

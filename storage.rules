@@ -46,11 +46,13 @@ service firebase.storage {
         && request.resource.size < 25 * 1024 * 1024;
     }
 
-    match /classrooms/{classroomId}/submissions/{studentId}/{fileName} {
+    match /classrooms/{classroomId}/submissions/{studentId}/{assignmentId}/{fileName} {
       allow read: if ownsClassroom(classroomId)
         || (isClassroomStudent(classroomId) && request.auth.uid == studentId);
       allow write: if isClassroomStudent(classroomId)
         && request.auth.uid == studentId
+        && firestore.exists(/databases/(default)/documents/assignments/$(assignmentId))
+        && firestore.get(/databases/(default)/documents/assignments/$(assignmentId)).data.classroomId == classroomId
         && request.resource.size < 25 * 1024 * 1024;
     }
   }

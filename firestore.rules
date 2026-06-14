@@ -37,6 +37,7 @@ service cloud.firestore {
     function isClassroomStudent(classroomId) {
       return userRole('student')
         && exists(/databases/$(database)/documents/classrooms/$(classroomId))
+        && classroomData(classroomId).studentIds is list
         && request.auth.uid in classroomData(classroomId).studentIds;
     }
 
@@ -46,6 +47,12 @@ service cloud.firestore {
 
     function hasClassroomId(data) {
       return data.classroomId is string;
+    }
+
+    function assignmentBelongsToClassroom(assignmentId, classroomId) {
+      return assignmentId is string
+        && exists(/databases/$(database)/documents/assignments/$(assignmentId))
+        && get(/databases/$(database)/documents/assignments/$(assignmentId)).data.classroomId == classroomId;
     }
 
     match /users/{userId} {
@@ -71,8 +78,29 @@ service cloud.firestore {
       allow create: if userRole('teacher')
         && request.resource.data.teacherId == request.auth.uid
         && request.resource.data.studentIds is list;
-      allow read: if canReadClassroom(classroomId);
+      allow read: if (userRole('teacher')
+          && resource.data.teacherId == request.auth.uid)
+        || (userRole('student')
+          && request.auth.uid in resource.data.studentIds);
       allow update, delete: if ownsClassroom(classroomId);
+      allow update: if userRole('student')
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['studentIds', 'students', 'updatedAt'])
+        && !(request.auth.uid in resource.data.studentIds)
+        && request.auth.uid in request.resource.data.studentIds
+        && request.resource.data.studentIds.hasAll(resource.data.studentIds)
+        && request.resource.data.studentIds.size() == resource.data.studentIds.size() + 1
+        && request.resource.data.students == request.resource.data.studentIds.size();
+    }
+
+    match /classroomJoinCodes/{joinCode} {
+      allow create: if userRole('teacher')
+        && request.resource.data.teacherId == request.auth.uid
+        && request.resource.data.classroomId is string;
+      allow read: if userRole('student');
+      allow delete: if userRole('teacher')
+        && resource.data.teacherId == request.auth.uid;
+      allow update: if false;
     }
 
     match /modules/{moduleId} {
@@ -102,11 +130,18 @@ service cloud.firestore {
     match /submissions/{submissionId} {
       allow create: if userRole('student')
         && hasClassroomId(request.resource.data)
+        && request.resource.data.assignmentId is string
         && request.resource.data.studentId == request.auth.uid
-        && isClassroomStudent(request.resource.data.classroomId);
-      allow read: if signedIn()
+        && isClassroomStudent(request.resource.data.classroomId)
+        && assignmentBelongsToClassroom(
+          request.resource.data.assignmentId,
+          request.resource.data.classroomId
+        );
+      allow read: if userRole('student')
+        && resource.data.studentId == request.auth.uid;
+      allow read: if userRole('teacher')
         && hasClassroomId(resource.data)
-        && (resource.data.studentId == request.auth.uid || ownsClassroom(resource.data.classroomId));
+        && ownsClassroom(resource.data.classroomId);
       allow update: if hasClassroomId(resource.data) && ownsClassroom(resource.data.classroomId);
       allow delete: if false;
     }

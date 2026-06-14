@@ -9,19 +9,27 @@ import { loginStudent } from '../services/studentAuth.js'
 function StudentLoginPage() {
   const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   async function handleSubmit(event) {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
 
     setIsSubmitting(true)
-    await loginStudent({
-      email: formData.get('email'),
-      password: formData.get('password'),
-    })
+    setErrorMessage('')
 
-    setIsSubmitting(false)
-    navigate('/student/intro')
+    try {
+      await loginStudent({
+        email: formData.get('email'),
+        password: formData.get('password'),
+      })
+
+      navigate('/student/dashboard')
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -36,10 +44,14 @@ function StudentLoginPage() {
         <form className="auth-form" onSubmit={handleSubmit}>
           <FormField id="student-email" label="Email" name="email" required type="email" />
           <FormField id="student-password" label="Password" name="password" required type="password" />
+          <Link className="forgot-link" to="/password-reset">
+            Forgot Password?
+          </Link>
           <PrimaryButton type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Logging in...' : 'Log In'}
           </PrimaryButton>
         </form>
+        {errorMessage && <p className="microcopy">{errorMessage}</p>}
         <p className="microcopy">
           Don&apos;t have an account? <Link to="/student/signup">Create Account</Link>
         </p>
