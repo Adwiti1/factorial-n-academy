@@ -1,4 +1,5 @@
 import { getFirebaseAnalyticsByClassroom } from './firebaseTeacher.js'
+import { requireMockFallback } from './mockFallback.js'
 import { getTeacherState } from './mockTeacher.js'
 
 const seededAnalytics = {
@@ -47,7 +48,7 @@ export async function getTeacherAnalytics(classroomId) {
       analytics,
     }
   } catch (error) {
-    console.warn('Using mock analytics fallback:', error.message)
+    requireMockFallback(error, 'Analytics load failed')
 
     return {
       source: 'mock',

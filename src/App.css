@@ -593,33 +593,9 @@
 }
 
 .educator-badge span {
-  width: 28px;
-  height: 20px;
-  position: relative;
-  display: block;
-  border-bottom: 8px solid #1f1f1f;
-  transform: skewX(-15deg);
-}
-
-.educator-badge span::before,
-.educator-badge span::after {
-  content: '';
-  position: absolute;
-  background: #1f1f1f;
-}
-
-.educator-badge span::before {
-  top: -10px;
-  left: -6px;
-  width: 40px;
-  height: 10px;
-}
-
-.educator-badge span::after {
-  top: -4px;
-  right: -6px;
-  width: 2px;
-  height: 22px;
+  color: #1f1f1f;
+  font-size: 20px;
+  font-weight: 800;
 }
 
 .outline-button {
@@ -1154,6 +1130,14 @@
   line-height: 1.12;
 }
 
+.workspace-heading .student-dashboard-intro {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: none;
+}
+
 .compact-button {
   width: auto;
   min-width: 160px;
@@ -1298,6 +1282,58 @@
   margin: 4px 0 0;
   font-size: 22px;
   font-weight: 850;
+}
+
+.classroom-card .student-card-value {
+  font-size: 16px;
+}
+
+.student-dashboard-panels {
+  margin-top: 24px;
+}
+
+.student-grade {
+  color: #111111;
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.student-assignment-action {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.student-assignment-action button {
+  min-width: 74px;
+  min-height: 30px;
+  border: 1px solid #111111;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #111111;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.student-assignment-action strong {
+  color: #111111;
+  font-size: 12px;
+}
+
+.student-modal-title {
+  margin: -10px 0 18px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.classroom-modal textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px;
+  resize: vertical;
 }
 
 .classroom-detail-summary {
@@ -1954,7 +1990,7 @@
   }
 
   .teacher-sidebar nav {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   }
 
   .teacher-topbar {

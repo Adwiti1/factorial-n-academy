@@ -6,6 +6,7 @@ import {
   loginUser,
   signupUser,
 } from './mockAuth.js'
+import { requireMockFallback } from './mockFallback.js'
 
 export async function signupStudent(account) {
   try {
@@ -16,11 +17,14 @@ export async function signupStudent(account) {
       user,
     }
   } catch (error) {
-    console.warn('Using mock student signup fallback:', error.message)
+    requireMockFallback(error, 'Student signup failed')
 
     return {
       source: 'mock',
-      user: signupUser(account),
+      user: signupUser({
+        ...account,
+        role: 'student',
+      }),
     }
   }
 }
@@ -34,11 +38,14 @@ export async function loginStudent(credentials) {
       user,
     }
   } catch (error) {
-    console.warn('Using mock student login fallback:', error.message)
+    requireMockFallback(error, 'Student login failed')
 
     return {
       source: 'mock',
-      user: loginUser(credentials),
+      user: loginUser({
+        ...credentials,
+        role: 'student',
+      }),
     }
   }
 }

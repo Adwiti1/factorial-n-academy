@@ -9,20 +9,27 @@ import { loginEducator } from '../services/educatorLogin.js'
 function LoginPage() {
   const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   async function handleSubmit(event) {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
 
     setIsSubmitting(true)
+    setErrorMessage('')
 
-    await loginEducator({
-      email: formData.get('email'),
-      password: formData.get('password'),
-    })
+    try {
+      await loginEducator({
+        email: formData.get('email'),
+        password: formData.get('password'),
+      })
 
-    setIsSubmitting(false)
-    navigate('/dashboard')
+      navigate('/dashboard')
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -37,13 +44,14 @@ function LoginPage() {
         <form className="auth-form" onSubmit={handleSubmit}>
           <FormField id="email" label="Email" name="email" required type="email" />
           <FormField id="password" label="Password" name="password" required type="password" />
-          <Link className="forgot-link" to="/signup">
+          <Link className="forgot-link" to="/password-reset">
             Forgot Password?
           </Link>
           <PrimaryButton type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Logging in...' : 'Log In'}
           </PrimaryButton>
         </form>
+        {errorMessage && <p className="microcopy">{errorMessage}</p>}
         <p className="microcopy">
           Don&apos;t have an account? <Link to="/signup">Create Account</Link>
         </p>

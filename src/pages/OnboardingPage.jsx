@@ -8,20 +8,28 @@ import { saveStudentOnboarding } from '../services/studentOnboarding.js'
 function OnboardingPage() {
   const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   async function handleSubmit(event) {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
 
     setIsSubmitting(true)
-    await saveStudentOnboarding({
-      age: formData.get('age'),
-      grade: formData.get('grade'),
-      experience: formData.get('experience'),
-    })
+    setErrorMessage('')
 
-    setIsSubmitting(false)
-    navigate('/goals')
+    try {
+      await saveStudentOnboarding({
+        age: formData.get('age'),
+        grade: formData.get('grade'),
+        experience: formData.get('experience'),
+      })
+
+      navigate('/goals')
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -65,6 +73,7 @@ function OnboardingPage() {
           <PrimaryButton type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Saving...' : 'Continue'}
           </PrimaryButton>
+          {errorMessage && <p className="microcopy">{errorMessage}</p>}
         </form>
       </section>
     </AppShell>

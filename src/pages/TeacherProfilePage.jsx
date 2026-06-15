@@ -11,21 +11,28 @@ const subjects = ['Robotics', 'Coding', 'Computer Science', 'Engineering', 'Math
 function TeacherProfilePage() {
   const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   async function handleSubmit(event) {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
 
     setIsSubmitting(true)
+    setErrorMessage('')
 
-    await saveTeacherProfile({
-      grades: formData.get('grades'),
-      subjects: formData.getAll('subjects'),
-      focusAreas: formData.get('focusAreas'),
-    })
+    try {
+      await saveTeacherProfile({
+        grades: formData.get('grades'),
+        subjects: formData.getAll('subjects'),
+        focusAreas: formData.get('focusAreas'),
+      })
 
-    setIsSubmitting(false)
-    navigate('/teacher-experience')
+      navigate('/teacher-experience')
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -79,6 +86,7 @@ function TeacherProfilePage() {
             <PrimaryButton type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Saving...' : 'Continue'}
             </PrimaryButton>
+            {errorMessage && <p className="microcopy">{errorMessage}</p>}
           </form>
         </section>
       </section>

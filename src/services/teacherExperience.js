@@ -1,4 +1,5 @@
 import { saveFirebaseTeacherExperience } from './firebaseTeacher.js'
+import { requireMockFallback } from './mockFallback.js'
 import { saveTeacherExperience as saveMockTeacherExperience } from './mockTeacher.js'
 
 export async function saveTeacherExperience(experience) {
@@ -9,7 +10,7 @@ export async function saveTeacherExperience(experience) {
       experience,
     }
   } catch (error) {
-    console.warn('Using mock teacher experience fallback:', error.message)
+    requireMockFallback(error, 'Teacher experience save failed')
 
     return {
       source: 'mock',

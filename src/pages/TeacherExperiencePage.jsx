@@ -14,6 +14,7 @@ const levels = [
 function TeacherExperiencePage() {
   const [level, setLevel] = useState('Intermediate')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
   const navigate = useNavigate()
 
   async function handleContinue(event) {
@@ -21,13 +22,20 @@ function TeacherExperiencePage() {
     const formData = new FormData(event.currentTarget)
 
     setIsSubmitting(true)
-    await saveTeacherExperience({
-      level,
-      certification: formData.get('certification'),
-    })
+    setErrorMessage('')
 
-    setIsSubmitting(false)
-    navigate('/teacher-tutorial')
+    try {
+      await saveTeacherExperience({
+        level,
+        certification: formData.get('certification'),
+      })
+
+      navigate('/teacher-tutorial')
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -70,6 +78,7 @@ function TeacherExperiencePage() {
             <PrimaryButton type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Saving...' : 'Continue'}
             </PrimaryButton>
+            {errorMessage && <p className="microcopy">{errorMessage}</p>}
           </form>
         </section>
       </section>

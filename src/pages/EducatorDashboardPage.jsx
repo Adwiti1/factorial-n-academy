@@ -8,17 +8,25 @@ function EducatorDashboardPage() {
   const [state, setState] = useState({ classrooms: [] })
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
 
   useEffect(() => {
     let isMounted = true
 
     async function loadClassrooms() {
-      const result = await getTeacherClassroomState()
+      try {
+        const result = await getTeacherClassroomState()
 
-      if (isMounted) {
-        setState(result.state)
-        setIsLoading(false)
+        if (isMounted) {
+          setState(result.state)
+        }
+      } catch (error) {
+        console.warn('Classroom list could not be loaded:', error.message)
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 
@@ -34,23 +42,30 @@ function EducatorDashboardPage() {
     const formData = new FormData(event.currentTarget)
 
     setIsCreating(true)
-    const result = await createTeacherClassroom({
-      name: formData.get('name'),
-      grade: formData.get('grade'),
-      subject: formData.get('subject'),
-    })
+    setErrorMessage('')
 
-    if (result.state) {
-      setState(result.state)
-    } else {
-      setState((currentState) => ({
-        ...currentState,
-        classrooms: [result.classroom, ...currentState.classrooms],
-      }))
+    try {
+      const result = await createTeacherClassroom({
+        name: formData.get('name'),
+        grade: formData.get('grade'),
+        subject: formData.get('subject'),
+      })
+
+      if (result.state) {
+        setState(result.state)
+      } else {
+        setState((currentState) => ({
+          ...currentState,
+          classrooms: [result.classroom, ...currentState.classrooms],
+        }))
+      }
+
+      setModalOpen(false)
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsCreating(false)
     }
-
-    setIsCreating(false)
-    setModalOpen(false)
   }
 
   return (
@@ -131,6 +146,7 @@ function EducatorDashboardPage() {
               <PrimaryButton type="submit" disabled={isCreating}>
                 {isCreating ? 'Creating...' : 'Create Classroom'}
               </PrimaryButton>
+              {errorMessage && <p className="microcopy">{errorMessage}</p>}
             </form>
           </section>
         </div>

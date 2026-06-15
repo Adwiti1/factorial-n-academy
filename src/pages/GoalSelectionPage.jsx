@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import AppShell from '../components/AppShell.jsx'
 import PrimaryButton from '../components/PrimaryButton.jsx'
 import { saveStudentGoals } from '../services/studentOnboarding.js'
@@ -23,13 +23,23 @@ const goals = [
 ]
 
 function GoalSelectionPage() {
+  const navigate = useNavigate()
   const [selectedGoal, setSelectedGoal] = useState('10')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   async function handleContinue() {
     setIsSubmitting(true)
-    await saveStudentGoals({ weeklyGoalMinutes: selectedGoal })
-    setIsSubmitting(false)
+    setErrorMessage('')
+
+    try {
+      await saveStudentGoals({ weeklyGoalMinutes: selectedGoal })
+      navigate('/student/dashboard')
+    } catch (error) {
+      setErrorMessage(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -59,6 +69,7 @@ function GoalSelectionPage() {
         <PrimaryButton disabled={isSubmitting} onClick={handleContinue} type="button">
           {isSubmitting ? 'Saving...' : 'Continue'}
         </PrimaryButton>
+        {errorMessage && <p className="microcopy">{errorMessage}</p>}
       </section>
     </AppShell>
   )
