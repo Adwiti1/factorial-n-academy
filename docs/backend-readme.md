@@ -181,6 +181,24 @@ Stores teacher-owned classrooms.
 }
 ```
 
+### `classroomJoinCodes/{joinCode}`
+
+Stores the minimal lookup needed for a signed-in student to join a classroom
+without exposing every classroom record.
+
+```js
+{
+  classroomId: "robotics-8a",
+  teacherId: "teacherUid",
+  classroomName: "Robotics 8A",
+  createdAt: timestamp
+}
+```
+
+Joining a classroom adds only the signed-in student's UID to the classroom
+`studentIds` array. Firestore rules prevent students from changing any other
+classroom fields.
+
 ### `modules/{moduleId}`
 
 Stores classroom lesson modules.
@@ -237,6 +255,30 @@ Stores quiz metadata.
 ```
 
 ### `submissions/{submissionId}`
+
+Student submissions use a stable ID composed from the assignment and student
+IDs. This prevents duplicate submissions for the same assignment.
+
+```js
+{
+  classroomId: "robotics-8a",
+  assignmentId: "assignment-1",
+  studentId: "studentUid",
+  response: "My written response",
+  uploadedFiles: [
+    {
+      name: "robot-code.py",
+      path: "classrooms/robotics-8a/submissions/studentUid/assignment-1/robot-code.py",
+      url: "https://..."
+    }
+  ],
+  status: "Submitted",
+  submittedAt: timestamp
+}
+```
+
+Students can read only their own submissions. Teachers can read and grade
+submissions belonging to classrooms they own.
 
 Stores student assignment submissions and teacher feedback.
 
