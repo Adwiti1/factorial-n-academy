@@ -113,7 +113,10 @@ async function signUpOrSignIn({ email, password, displayName }) {
       }),
     })
 
-    return account.localId
+    return {
+      id: account.localId,
+      token: account.idToken,
+    }
   } catch (error) {
     if (!error.message.includes('EMAIL_EXISTS')) {
       throw error
@@ -129,14 +132,22 @@ async function signUpOrSignIn({ email, password, displayName }) {
       }),
     })
 
-    return account.localId
+    return {
+      id: account.localId,
+      token: account.idToken,
+    }
   }
 }
 
-async function writeDocument(path, data) {
+async function writeDocument(path, data, idToken) {
   const url = `${firestoreBaseUrl()}/${encodePath(path)}`
   return firebaseRequest(url, {
     method: 'PATCH',
+    headers: idToken
+      ? {
+          Authorization: `Bearer ${idToken}`,
+        }
+      : undefined,
     body: JSON.stringify({
       fields: toFirestoreFields(data),
     }),
@@ -146,12 +157,15 @@ async function writeDocument(path, data) {
 async function seed() {
   console.log(`Seeding Firebase emulators for project ${PROJECT_ID}...`)
 
-  const teacherId = await signUpOrSignIn(teacher)
-  const studentIds = []
+  const teacherAccount = await signUpOrSignIn(teacher)
+  const teacherId = teacherAccount.id
+  const studentAccounts = []
 
   for (const student of students) {
-    studentIds.push(await signUpOrSignIn(student))
+    studentAccounts.push(await signUpOrSignIn(student))
   }
+
+  const studentIds = studentAccounts.map((studentAccount) => studentAccount.id)
 
   const now = new Date()
   const classroomId = 'robotics-8a'
@@ -162,7 +176,7 @@ async function seed() {
     role: 'teacher',
     language: 'English',
     createdAt: now,
-  })
+  }, teacherAccount.token)
 
   await writeDocument(`teachers/${teacherId}`, {
     displayName: teacher.displayName,
@@ -177,10 +191,11 @@ async function seed() {
       certification: 'B.Ed',
     },
     updatedAt: now,
-  })
+  }, teacherAccount.token)
 
   for (const [index, student] of students.entries()) {
-    const studentId = studentIds[index]
+    const studentAccount = studentAccounts[index]
+    const studentId = studentAccount.id
 
     await writeDocument(`users/${studentId}`, {
       displayName: student.displayName,
@@ -188,7 +203,7 @@ async function seed() {
       role: 'student',
       language: 'English',
       createdAt: now,
-    })
+    }, studentAccount.token)
 
     await writeDocument(`students/${studentId}`, {
       displayName: student.displayName,
@@ -202,7 +217,7 @@ async function seed() {
         weeklyGoalMinutes: index === 2 ? '20' : '10',
       },
       updatedAt: now,
-    })
+    }, studentAccount.token)
   }
 
   await writeDocument(`classrooms/${classroomId}`, {
@@ -218,7 +233,14 @@ async function seed() {
     upcoming: 'Sensor maze challenge',
     createdAt: now,
     updatedAt: now,
-  })
+  }, teacherAccount.token)
+
+  await writeDocument('classroomJoinCodes/ROBO8A', {
+    classroomId,
+    teacherId,
+    classroomName: 'Robotics 8A',
+    createdAt: now,
+  }, teacherAccount.token)
 
   await writeDocument('modules/module-1', {
     classroomId,
@@ -238,7 +260,7 @@ async function seed() {
     ],
     createdAt: now,
     updatedAt: now,
-  })
+  }, teacherAccount.token)
 
   await writeDocument('modules/module-2', {
     classroomId,
@@ -253,7 +275,7 @@ async function seed() {
     ],
     createdAt: now,
     updatedAt: now,
-  })
+  }, teacherAccount.token)
 
   await writeDocument('assignments/assignment-1', {
     classroomId,
@@ -268,7 +290,7 @@ async function seed() {
     status: 'Assigned',
     createdAt: now,
     updatedAt: now,
-  })
+  }, teacherAccount.token)
 
   await writeDocument('quizzes/quiz-1', {
     classroomId,
@@ -278,7 +300,7 @@ async function seed() {
     average: 86,
     createdAt: now,
     updatedAt: now,
-  })
+  }, teacherAccount.token)
 
   await writeDocument('analytics/robotics-8a', {
     classroomId,
@@ -305,9 +327,9 @@ async function seed() {
     ],
     seeded: true,
     updatedAt: now,
-  })
+  }, teacherAccount.token)
 
-  await writeDocument('submissions/submission-1', {
+  await writeDocument(`submissions/assignment-1_${studentIds[0]}`, {
     classroomId,
     assignmentId: 'assignment-1',
     studentId: studentIds[0],
@@ -315,9 +337,9 @@ async function seed() {
     grade: 86,
     feedback: 'Clear route plan and strong sensor explanation.',
     submittedAt: now,
-  })
+  }, studentAccounts[0].token)
 
-  await writeDocument('submissions/submission-2', {
+  await writeDocument(`submissions/assignment-1_${studentIds[1]}`, {
     classroomId,
     assignmentId: 'assignment-1',
     studentId: studentIds[1],
@@ -325,7 +347,7 @@ async function seed() {
     grade: 78,
     feedback: 'Good start. Add more detail about obstacle handling.',
     submittedAt: now,
-  })
+  }, studentAccounts[1].token)
 
   console.log('Seed complete.')
   console.log(`Teacher login: ${teacher.email} / ${teacher.password}`)
